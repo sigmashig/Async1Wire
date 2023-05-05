@@ -1,0 +1,25 @@
+{
+    "name": "Async1Wire",
+    "version": "0.1.0",
+    "description": "The library, supports an asynchromous work with 1-wire. At this moment DS1820 supported only.",
+    "keywords": "DS1820, DS18B20, OneWire, 1-wire, async, asynchronous",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/sigmashig/Async1Wire.git"
+    },
+    "authors": [
+        {
+            "name": "Ihor Shevchenko",
+            "email": "igor@ishevchenko.net",
+            "url": "https://github.com/sigmashig/Async1Wire.git"
+        }
+    ],
+    "license": "MIT",
+    "dependencies": {
+        "paulstoffregen/OneWire": "^2.3.7",
+        "milesburton/DallasTemperature": "^3.11.0"
+    },
+    "homepage": "https://github.com/sigmashig/Async1Wire.git",
+    "frameworks": "arduino",
+    "platforms": "espressif32"
+}
