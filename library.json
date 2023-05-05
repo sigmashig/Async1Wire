@@ -21,5 +21,14 @@
     },
     "homepage": "https://github.com/sigmashig/Async1Wire.git",
     "frameworks": "arduino",
-    "platforms": "espressif32"
+    "platforms": "espressif32",
+    "examples": [
+        {
+            "name": "MultiDevices",
+            "base": "examples/MultiDevices",
+            "files": [
+                "MultiThermometers.cpp"
+            ]
+        }
+    ]
 }
