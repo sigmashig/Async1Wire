@@ -72,6 +72,7 @@ private:
     void notifyThermometerChanges(const Thermometer *t);
     void notifyTemperatureChanges(const Thermometer *t);
     static void onTemperatureLoopTimer(TimerHandle_t xTimer);
+    void requestTemperature();
 };
 
 extern Async1WireMgr OneWireMgr;

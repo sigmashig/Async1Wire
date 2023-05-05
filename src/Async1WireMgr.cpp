@@ -9,7 +9,6 @@ Async1WireMgr::Async1WireMgr()
 
 void Async1WireMgr::Init()
 {
-    Serial.println("Async1WireMgr::Init()");
     if (!isInitialized)
     {
 
@@ -19,9 +18,10 @@ void Async1WireMgr::Init()
         }
         isInitialized = true;
     }
-    Serial.println("Async1WireMgr::Init() - Point1");
     SearchDevices();
+    requestTemperature();
     xTimerStart(temperatureLoopTimer, 0);
+    
 }
 
 bool Async1WireMgr::Add1Wire(byte pin)
@@ -210,7 +210,6 @@ void Async1WireMgr::onTemperatureLoopTimer(TimerHandle_t xTimer)
     for (auto &ow : OneWireMgr.oneWireCollection)
     {
         OneWire *oneWire = ow.second;
-        oneWire->reset_search();
         DallasTemperature dt = DallasTemperature(oneWire);
         for (auto &th : OneWireMgr.thermometers)
         {
@@ -233,6 +232,26 @@ void Async1WireMgr::onTemperatureLoopTimer(TimerHandle_t xTimer)
         }
     }
     xTimerReset(OneWireMgr.temperatureLoopTimer, 0);
+}
+
+void Async1WireMgr::requestTemperature()
+{
+    for (auto &ow : OneWireMgr.oneWireCollection)
+    {
+        OneWire *oneWire = ow.second;
+        DallasTemperature dt = DallasTemperature(oneWire);
+        for (auto &th : OneWireMgr.thermometers)
+        {
+            Thermometer *t = th.second;
+            if (t->Pin == ow.first)
+            {
+                if (t->Status)
+                {
+                    dt.requestTemperaturesByAddress(t->Address.addr);
+                }
+            }
+        }
+    }
 }
 
 //--------------------------------------------------------------------------
