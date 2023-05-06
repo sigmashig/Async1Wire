@@ -3,7 +3,7 @@
 
 Async1WireMgr::Async1WireMgr()
 {
-    temperatureLoopTimer = xTimerCreateStatic("TemperatureLoopTimer", pdMS_TO_TICKS(TIMER_LOOP_PERIOD_THERMOMETERS),
+    temperatureLoopTimer = xTimerCreateStatic("TemperatureLoopTimer", pdMS_TO_TICKS(temperatureTimerInterval),
                                               pdTRUE, NULL, onTemperatureLoopTimer, &temperatureLoopBuffer);
 }
 
@@ -95,6 +95,7 @@ void Async1WireMgr::SearchDevices()
                 }
                 else
                 {
+                    t->Pin = oneWireUnit.first;
                     t->Status = true;
                 }
                 thermometers[t->Name] = t;
@@ -105,7 +106,7 @@ void Async1WireMgr::SearchDevices()
     }
 }
 
-void Async1WireMgr::SetThermometerName(String newName, Address1Wire addr, byte pin)
+void Async1WireMgr::SetThermometerName(String newName, Address1Wire addr)
 {
     Thermometer *thermometer = getThermometer(addr);
     if (thermometer != nullptr)
@@ -118,7 +119,7 @@ void Async1WireMgr::SetThermometerName(String newName, Address1Wire addr, byte p
     {
         thermometer = new Thermometer();
         thermometer->Name = newName;
-        thermometer->Pin = pin;
+        thermometer->Pin = 0;
         thermometer->Address = addr;
         thermometer->Status = false;
         thermometer->IsParasitePowered = false;
@@ -127,6 +128,12 @@ void Async1WireMgr::SetThermometerName(String newName, Address1Wire addr, byte p
         thermometers[newName] = thermometer;
         SearchDevices();
     }
+}
+
+void Async1WireMgr::SetTemperatureTimerInterval(ulong interval)
+{
+    temperatureTimerInterval = interval;
+    xTimerChangePeriod(temperatureLoopTimer, pdMS_TO_TICKS(temperatureTimerInterval), 0);
 }
 
 void Async1WireMgr::onThermometerChangesSubscribe(ThermometerCallback callback)
@@ -253,6 +260,5 @@ void Async1WireMgr::requestTemperature()
         }
     }
 }
-
 //--------------------------------------------------------------------------
 Async1WireMgr OneWireMgr;

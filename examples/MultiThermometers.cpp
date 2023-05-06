@@ -30,10 +30,17 @@ void setup(void)
 
   // subscribe to Temperature changes
   OneWireMgr.onTemperatureChangesSubscribe(getTemp);
-  //begin work
-  OneWireMgr.Init();
 
-  
+  // Add new thermometer manually (there are search devices before begin work)
+  OneWireMgr.SetThermometerName("T_first_thermometer", Address1Wire({0x28, 0xff, 0xe6, 0xe4, 0x90, 0x16, 0x04, 0x46}));
+
+  // Set timer interval for temperature refresh in ms
+  OneWireMgr.SetTemperatureTimerInterval(5 * 1000); // 5 sec
+  // begin work
+  OneWireMgr.Init();
+  // rename thermometer
+  OneWireMgr.SetThermometerName("T_Second_thermometer", Address1Wire({0x28, 0xff, 0x3e, 0x9a, 0x87, 0x16, 0x03, 0x28}));
+
   int nTherm = OneWireMgr.GetNumbThermometers();
   Serial.printf("Number of Thermometers: %d\n", nTherm);
 
