@@ -1,6 +1,6 @@
 {
     "name": "Async1Wire",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "description": "The library, supports an asynchromous work with 1-wire. At this moment DS1820 supported only.",
     "keywords": "DS1820, DS18B20, OneWire, 1-wire, async, asynchronous",
     "repository": {
