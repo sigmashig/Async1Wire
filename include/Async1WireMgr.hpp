@@ -12,11 +12,32 @@
 #define DEFAULT_RESOLUTION 10
 #endif
 
+#define SIZE_OF_ADDRESS_PRINTED (sizeof("00:00:00:00:00:00:00:00") - 1)
+
+typedef enum
+{
+    UNIT_RENAMED,
+    UNIT_ADDED,
+    UNIT_CONNECTION_LOST,
+    UNIT_CONNECTION_RESTORED,
+    UNIT_ERROR
+} ChangesEvent;
+
 typedef union
 {
     byte addr[8];
     int64_t packedAddress;
 } Address1Wire;
+
+typedef struct
+{
+    String Name;
+    String OldName;
+    String Message;
+    Address1Wire Address;
+    byte Pin;
+    ChangesEvent Event;
+} ThermometerChanges;
 
 typedef enum
 {
@@ -36,7 +57,8 @@ typedef struct
     double Temperature;
 } Thermometer;
 
-typedef void (*ThermometerCallback)(const Thermometer *t);
+typedef void (*ThermometerCallback)(const ThermometerChanges *t);
+typedef void (*TemperatureCallback)(const Thermometer *t);
 
 class Async1WireMgr
 {
@@ -99,10 +121,10 @@ public:
     ///          The callback will be called when temperature of any thermometer is changed.
     ///          The precision of temperature is 0.1 degree.
     /// @param callback
-    void onTemperatureChangesSubscribe(ThermometerCallback callback);
+    void onTemperatureChangesSubscribe(TemperatureCallback callback);
     /// @brief Remove callback on temperature changes.
     /// @param callback
-    void onTemperatureChangesUnSubscribe(ThermometerCallback callback);
+    void onTemperatureChangesUnSubscribe(TemperatureCallback callback);
 
     /// @brief Detect family of device by address.
     /// @details This method detects family of device by address.
@@ -115,20 +137,25 @@ public:
     ///          The temperature refreshed every interval. No refresh between intervals.
     ///          The default value is 15 seconds.(TIMER_LOOP_PERIOD_THERMOMETERS)
     void SetTemperatureTimerInterval(ulong interval);
+    /// @brief Print OneWire address to string.
+    /// @param addr
+    /// @return buffer with printed address. Please, note that the buffer is static and just one for all calls.
+    static const char *PrintAddress(Address1Wire addr);
 
 private:
     bool isInitialized = false;
+    static char addrPrinted[SIZE_OF_ADDRESS_PRINTED + 1];
     ulong temperatureTimerInterval = TIMER_LOOP_PERIOD_THERMOMETERS;
     std::map<byte, OneWire *> oneWireCollection;
     std::map<String, Thermometer *> thermometers;
 
     std::vector<ThermometerCallback> thermometerChangesSubscriptions;
-    std::vector<ThermometerCallback> temperatureSubscriptions;
+    std::vector<TemperatureCallback> temperatureSubscriptions;
     StaticTimer_t temperatureLoopBuffer;
     TimerHandle_t temperatureLoopTimer;
 
     Thermometer *getThermometer(Address1Wire addr);
-    void notifyThermometerChanges(const Thermometer *t);
+    void notifyThermometerChanges(const ThermometerChanges *t);
     void notifyTemperatureChanges(const Thermometer *t);
     static void onTemperatureLoopTimer(TimerHandle_t xTimer);
     void requestTemperature();
