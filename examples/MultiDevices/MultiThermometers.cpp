@@ -2,53 +2,75 @@
 #include "Async1WireMgr.hpp"
 #include <DallasTemperature.h>
 
-void thermometerChanged(const ThermometerChanges *t)
+
+void thermometerHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
+  ThermometerEvent *t = (ThermometerEvent *)event_data;
   switch (t->Event)
   {
   case UNIT_RENAMED:
-    Serial.printf("[%lu]RENAMED!!! Thermometer: OldName=%s -> Name=%s\n", millis(), t->OldName.c_str(), t->Name.c_str());
+    Serial.printf("[%lu]RENAMED!!! Thermometer: OldName=%s -> Name=%s\n", millis(), t->OldName, t->Name);
     break;
   case UNIT_ADDED:
-    Serial.printf("[%lu]ADDED!!! Thermometer: Name=%s\n", millis(), t->Name.c_str());
+    Serial.printf("[%lu]ADDED!!! Thermometer: Name=%s\n", millis(), t->Name);
     break;
   case UNIT_CONNECTION_LOST:
-    Serial.printf("[%lu]LOST!!! Thermometer: Name=%s\n", millis(), t->Name.c_str());
+    Serial.printf("[%lu]LOST!!! Thermometer: Name=%s\n", millis(), t->Name);
     break;
   case UNIT_CONNECTION_RESTORED:
-    Serial.printf("[%lu]RESTORED!!! Thermometer: Name=%s\n", millis(), t->Name.c_str());
+    Serial.printf("[%lu]RESTORED!!! Thermometer: Name=%s\n", millis(), t->Name);
     break;
   case UNIT_ERROR:
-    Serial.printf("[%lu]ERROR!!! Thermometer: Name=%s\n", millis(), t->Name.c_str());
+    Serial.printf("[%lu]ERROR!!! Thermometer: Name=%s Error=%u\n ", millis(), t->Name, t->ErrorCode);
     break;
   }
 }
 
-void getTemp(const Thermometer *t)
+void temperatureHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
+  TemperatureEvent *t = (TemperatureEvent *)event_data;
+
   Serial.print("EVENT!!! Temperature: Name=");
   Serial.print(t->Name);
   Serial.print(", temp=");
   Serial.println(t->Temperature);
 }
 
+
 void setup(void)
 {
   Serial.begin(115200);
   Serial.println("-----------------------------------------");
+  esp_err_t espRes;
+ 
+  // Subscribe for event of thermometer's changes
+  espRes = esp_event_handler_instance_register(ONEWIRE_EVENT,
+                                               ONEWIRE_EVENT_THERMOMETER,
+                                               thermometerHandler,
+                                               NULL,
+                                               NULL);
+  if (espRes != ESP_OK)
+  {
+    Serial.printf("Failed to register thermometer event handler: %d", espRes);
+  }
+  // Subscribe for event of temperature's changes
+  espRes = esp_event_handler_instance_register(ONEWIRE_EVENT,
+                                               ONEWIRE_EVENT_TEMPERATURE,
+                                               temperatureHandler,
+                                               NULL,
+                                               NULL);
+  if (espRes != ESP_OK)
+  {
+    Serial.printf("Failed to register temperature event handler: %d", espRes);
+  }
+  
+ 
   bool res = false;
 
   // Add 1Wire on pin 25
   res = OneWireMgr.Add1Wire(25);
   Serial.printf("Add 1Wire on pin 25: %d\n", res);
-  // Subscribe to thermometer's changes
-  Serial.println("Subscribe to thermometer's changes");
-  OneWireMgr.onThermometerChangesSubscribe(thermometerChanged);
-
-  // subscribe to Temperature changes
-  Serial.println("Subscribe to Temperature changes");
-  OneWireMgr.onTemperatureChangesSubscribe(getTemp);
-
+  
   // Add new thermometer manually (there are search devices before begin work)
   Serial.println("Add new thermometer manually");
   OneWireMgr.SetThermometerName("T_first_thermometer", Address1Wire({0x28, 0xff, 0xe6, 0xe4, 0x90, 0x16, 0x04, 0x46}));
@@ -75,5 +97,5 @@ void setup(void)
 
 void loop(void)
 {
-  delay(100);
+  vTaskDelete(NULL);
 }

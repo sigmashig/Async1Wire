@@ -19,3 +19,7 @@ This library is in beta version and can be changed. Use it on own risk!
                     PLEASE NOTE! Callback functions are blocked. Please use them only for short operations.
                     
 This Branch is over due to the fact that callback functions are blocked functionality and can't be widely used. The new version will be released soon.
+
+2023-05-08 v0.3.0 - Moved to the ESP-IDF events instead of callback subscription
+                    See example for usage details
+                    

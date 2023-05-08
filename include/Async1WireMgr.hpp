@@ -2,6 +2,7 @@
 #include <map>
 #include <vector>
 #include <Arduino.h>
+#include <esp_event.h>
 #include <OneWire.h>
 
 #ifndef TIMER_LOOP_PERIOD_THERMOMETERS
@@ -13,6 +14,20 @@
 #endif
 
 #define SIZE_OF_ADDRESS_PRINTED (sizeof("00:00:00:00:00:00:00:00") - 1)
+#define LENGTH_OF_NAME 32
+
+ESP_EVENT_DECLARE_BASE(ONEWIRE_EVENT);
+typedef enum
+{
+    ONEWIRE_EVENT_THERMOMETER,
+    ONEWIRE_EVENT_TEMPERATURE
+} OneWireEvent;
+
+typedef enum
+{
+    UNIT_OK,
+    UNIT_CRC_ERROR
+} UnitError;
 
 typedef enum
 {
@@ -31,13 +46,19 @@ typedef union
 
 typedef struct
 {
-    String Name;
-    String OldName;
-    String Message;
+    char Name[LENGTH_OF_NAME];
+    char OldName[LENGTH_OF_NAME];
+    UnitError ErrorCode;
     Address1Wire Address;
     byte Pin;
     ChangesEvent Event;
-} ThermometerChanges;
+} ThermometerEvent;
+
+typedef struct
+{
+    char Name[LENGTH_OF_NAME];
+    double Temperature;
+} TemperatureEvent;
 
 typedef enum
 {
@@ -57,15 +78,14 @@ typedef struct
     double Temperature;
 } Thermometer;
 
-typedef void (*ThermometerCallback)(const ThermometerChanges *t);
-typedef void (*TemperatureCallback)(const Thermometer *t);
 
 class Async1WireMgr
 {
 public:
     /// @brief Default constructor.
     /// @details No activities here. Just initialize variables.
-    Async1WireMgr();
+    /// @param loop - event loop handle. NULL - default loop is used
+    Async1WireMgr(esp_event_loop_handle_t loop = NULL);
 
     /// @brief Begin work.
     /// @details This method must be called before any other method.
@@ -107,25 +127,6 @@ public:
     /// @brief Get the collection of thermometers (ReadOnly)
     /// @return Collection of thermometers
     const std::map<String, Thermometer *> GetThermometers() { return thermometers; };
-
-    /// @brief Add callback on thermometer changes (Add new thermometer).
-    /// @details This method adds callback to collection of callbacks.
-    ///          The callback will be called when new thermometer is added to collection in both cases: Manually or by SearchDevices method.
-    void onThermometerChangesSubscribe(ThermometerCallback callback);
-    /// @brief Remove callback on thermometer changes (Add new thermometer).
-    /// @param callback
-    void onThermometerChangesUnSubscribe(ThermometerCallback callback);
-
-    /// @brief Add callback on temperature changes.
-    /// @details This method adds callback to collection of callbacks.
-    ///          The callback will be called when temperature of any thermometer is changed.
-    ///          The precision of temperature is 0.1 degree.
-    /// @param callback
-    void onTemperatureChangesSubscribe(TemperatureCallback callback);
-    /// @brief Remove callback on temperature changes.
-    /// @param callback
-    void onTemperatureChangesUnSubscribe(TemperatureCallback callback);
-
     /// @brief Detect family of device by address.
     /// @details This method detects family of device by address.
     /// @param deviceAddress
@@ -148,15 +149,14 @@ private:
     ulong temperatureTimerInterval = TIMER_LOOP_PERIOD_THERMOMETERS;
     std::map<byte, OneWire *> oneWireCollection;
     std::map<String, Thermometer *> thermometers;
+    esp_event_loop_handle_t eventLoop;
 
-    std::vector<ThermometerCallback> thermometerChangesSubscriptions;
-    std::vector<TemperatureCallback> temperatureSubscriptions;
     StaticTimer_t temperatureLoopBuffer;
     TimerHandle_t temperatureLoopTimer;
 
     Thermometer *getThermometer(Address1Wire addr);
-    void notifyThermometerChanges(const ThermometerChanges *t);
-    void notifyTemperatureChanges(const Thermometer *t);
+    void notifyThermometerChanges(ThermometerEvent *t);
+    void notifyTemperatureChanges(TemperatureEvent *t);
     static void onTemperatureLoopTimer(TimerHandle_t xTimer);
     void requestTemperature();
 };
