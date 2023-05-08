@@ -4,22 +4,28 @@
 
 void thermometerChanged(const ThermometerChanges *t)
 {
+  return;
   switch (t->Event)
   {
   case UNIT_RENAMED:
-    Serial.printf("[%lu]RENAMED!!! Thermometer: OldName=%s -> Name=%s\n", millis(), t->OldName.c_str(), t->Name.c_str());
+    //Serial.printf("[%lu]RENAMED!!! Thermometer: OldName=%s -> Name=%s\n", millis(), t->OldName.c_str(), t->Name.c_str());
     break;
   case UNIT_ADDED:
-    Serial.printf("[%lu]ADDED!!! Thermometer: Name=%s\n", millis(), t->Name.c_str());
+  {
+    //String s = "qwertyuiop";
+    //Serial.println(s);
+    //Serial.print("Name="); Serial.println(t->Name);
+    //Serial.printf("[%lu]ADDED!!! Thermometer: Name=%s\n", millis(), "111"/*t->Name.c_str()*/);
+  }
     break;
   case UNIT_CONNECTION_LOST:
-    Serial.printf("[%lu]LOST!!! Thermometer: Name=%s\n", millis(), t->Name.c_str());
+    //Serial.printf("[%lu]LOST!!! Thermometer: Name=%s\n", millis(), t->Name.c_str());
     break;
   case UNIT_CONNECTION_RESTORED:
-    Serial.printf("[%lu]RESTORED!!! Thermometer: Name=%s\n", millis(), t->Name.c_str());
+    //Serial.printf("[%lu]RESTORED!!! Thermometer: Name=%s\n", millis(), t->Name.c_str());
     break;
   case UNIT_ERROR:
-    Serial.printf("[%lu]ERROR!!! Thermometer: Name=%s\n", millis(), t->Name.c_str());
+    //Serial.printf("[%lu]ERROR!!! Thermometer: Name=%s\n", millis(), t->Name.c_str());
     break;
   }
 }

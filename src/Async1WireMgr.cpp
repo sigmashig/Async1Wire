@@ -13,7 +13,6 @@ void Async1WireMgr::Init()
 {
     if (!isInitialized)
     {
-
         for (auto &oneWire : oneWireCollection)
         {
             oneWire.second->begin(oneWire.first);
@@ -53,6 +52,7 @@ void Async1WireMgr::SearchDevices()
 {
     if (isInitialized)
     {
+        Serial.println("Point 10");
         std::map<String, Thermometer *> inActiveThermometers;
 
         for (auto &thermometer : thermometers)
@@ -69,22 +69,27 @@ void Async1WireMgr::SearchDevices()
 
         for (auto &oneWireUnit : oneWireCollection)
         {
+            Serial.println("Point 11");
             oneWireUnit.second->reset_search();
             Address1Wire deviceAddress;
             // Step1: find all devices
             std::vector<Address1Wire> foundDevices;
             while (oneWireUnit.second->search(deviceAddress.addr))
             {
+                Serial.println("Point 12");
+
                 if (oneWireUnit.second->crc8(deviceAddress.addr, 7) != deviceAddress.addr[7])
                 {
+                    Serial.println("Point 13");
+
                     Thermometer *t = getThermometer(deviceAddress);
                     ThermometerChanges tc;
                     tc.Address = deviceAddress;
                     tc.Event = UNIT_ERROR;
-                    tc.Name = t->Name;
-                    tc.OldName = "";
+                    strncpy(tc.Name, t->Name.c_str(), sizeof(tc.Name));
+                    tc.OldName[0] = 0;
                     tc.Pin = t->Pin;
-                    tc.Message = "CRC Error";
+                    strncpy(tc.Message,"CRC Error", sizeof(tc.Message));
                     notifyThermometerChanges(&tc);
                     continue;
                 }
@@ -99,6 +104,8 @@ void Async1WireMgr::SearchDevices()
                 {
                 case ONEWIRE_DSTHERMO:
                 {
+                    Serial.println("Point 14");
+
                     Thermometer *t = getThermometer(addr);
                     bool isNew = (t == nullptr);
                     if (isNew)
@@ -117,11 +124,13 @@ void Async1WireMgr::SearchDevices()
 
                     if (inActiveThermometers.count(t->Name) > 0 || isNew)
                     {
+                        Serial.println("Point 15");
+
                         ThermometerChanges changes;
-                        changes.Name = t->Name;
+                        strncpy(changes.Name, t->Name.c_str(), sizeof(changes.Name));
                         changes.Address = t->Address;
                         changes.Pin = t->Pin;
-                        changes.OldName = "";
+                        changes.OldName[0] = 0;
 
                         if (isNew)
                         {
@@ -144,12 +153,14 @@ void Async1WireMgr::SearchDevices()
             {
                 if (inActiveThermometers.count(thermometer.first) == 0)
                 {
+                    Serial.println("Point 16");
+
                     ThermometerChanges changes;
                     changes.Event = UNIT_CONNECTION_LOST;
-                    changes.Name = thermometer.second->Name;
+                    strncpy(changes.Name, thermometer.second->Name.c_str(), sizeof(changes.Name));
                     changes.Address = thermometer.second->Address;
                     changes.Pin = thermometer.second->Pin;
-                    changes.OldName = "";
+                    changes.OldName[0] = 0;
                     notifyThermometerChanges(&changes);
                 }
             }
@@ -169,14 +180,14 @@ void Async1WireMgr::SetThermometerName(String newName, Address1Wire addr)
 {
     Thermometer *thermometer = getThermometer(addr);
     ThermometerChanges changes;
-    changes.Name = newName;
+    strncpy(changes.Name, newName.c_str(), sizeof(changes.Name));
     changes.Address = addr;
     if (thermometer != nullptr)
     {
         thermometer->Status = false;
         changes.Event = UNIT_RENAMED;
         changes.Pin = thermometer->Pin;
-        changes.OldName = thermometer->Name;
+        strncpy(changes.OldName, thermometer->Name.c_str(), sizeof(changes.OldName));
         notifyThermometerChanges(&changes);
 
         thermometers.erase(thermometer->Name);
@@ -197,7 +208,7 @@ void Async1WireMgr::SetThermometerName(String newName, Address1Wire addr)
 
         changes.Event = UNIT_ADDED;
         changes.Pin = 0;
-        changes.OldName = "";
+        changes.OldName[0] = 0;
         notifyThermometerChanges(&changes);
 
         SearchDevices();
@@ -259,7 +270,15 @@ void Async1WireMgr::notifyThermometerChanges(const ThermometerChanges *t)
 {
     for (auto &callback : thermometerChangesSubscriptions)
     {
-        callback(t);
+ 
+        ThermChangesParams params = ThermChangesParams();
+        Serial.printf("notifyThermometerChanges: size(p)=%u size(t)=%lu size(c)=%lu\n", sizeof(params.t), sizeof(*t), sizeof(callback));
+        //memcpy(&(params.t), t, sizeof(*t));
+
+        params.t = *t;
+        params.callback = callback;
+
+        xTaskCreate(runThermometerChanges, "ThermometerChanges", taskStackSize, &params, 1, NULL);
     }
 }
 
@@ -267,9 +286,13 @@ void Async1WireMgr::notifyTemperatureChanges(const Thermometer *t)
 {
     for (auto &callback : temperatureSubscriptions)
     {
-        callback(t);
+        TemperatureChangesParams* params = new TemperatureChangesParams();
+        params->t = (Thermometer*)t;
+        params->callback = callback;
+        xTaskCreate(runTemperatureChanges, "TemperatureChanges", taskStackSize, params, 1, NULL);
     }
 }
+
 
 OneWireDevices Async1WireMgr::DetectFamily(Address1Wire deviceAddress)
 {
@@ -305,10 +328,10 @@ void Async1WireMgr::onTemperatureLoopTimer(TimerHandle_t xTimer)
                         t->Status = true;
                         ThermometerChanges changes;
                         changes.Event = UNIT_CONNECTION_RESTORED;
-                        changes.Name = t->Name;
+                        strncpy(changes.Name, t->Name.c_str(), sizeof(changes.Name));
                         changes.Address = t->Address;
                         changes.Pin = t->Pin;
-                        changes.OldName = "";
+                        changes.OldName[0] = 0;
                         OneWireMgr.notifyThermometerChanges(&changes);
                     }
 
@@ -332,10 +355,10 @@ void Async1WireMgr::onTemperatureLoopTimer(TimerHandle_t xTimer)
                         t->Status = false;
                         ThermometerChanges changes;
                         changes.Event = UNIT_CONNECTION_LOST;
-                        changes.Name = t->Name;
+                        strncpy(changes.Name, t->Name.c_str(), sizeof(changes.Name));
                         changes.Address = t->Address;
                         changes.Pin = t->Pin;
-                        changes.OldName = "";
+                        changes.OldName[0] = 0;
                         OneWireMgr.notifyThermometerChanges(&changes);
                     }
                 }
@@ -362,6 +385,24 @@ void Async1WireMgr::requestTemperature()
             }
         }
     }
+}
+
+void Async1WireMgr::runThermometerChanges(void *params){
+    Serial.println("Point1");
+    ThermChangesParams *p = (ThermChangesParams*)params;
+    Serial.println("Point2");
+    p->callback(NULL /*p->t*/);
+    Serial.println("Point3");
+    // delete p;
+    vTaskDelete(NULL);
+}
+
+void Async1WireMgr::runTemperatureChanges(void *params)
+{
+    //TemperatureChangesParams *p = (TemperatureChangesParams *)params;
+    //p->callback(p->t);
+    //delete p;
+    vTaskDelete(NULL);
 }
 //--------------------------------------------------------------------------
 Async1WireMgr OneWireMgr;

@@ -13,6 +13,9 @@
 #endif
 
 #define SIZE_OF_ADDRESS_PRINTED (sizeof("00:00:00:00:00:00:00:00") - 1)
+#define LENGTH_UNIT_NAME 32
+#define LENGTH_MESSAGE 64
+
 
 typedef enum
 {
@@ -31,9 +34,9 @@ typedef union
 
 typedef struct
 {
-    String Name;
-    String OldName;
-    String Message;
+    char Name[LENGTH_UNIT_NAME];
+    char OldName[LENGTH_UNIT_NAME];
+    char Message[LENGTH_MESSAGE];
     Address1Wire Address;
     byte Pin;
     ChangesEvent Event;
@@ -142,8 +145,14 @@ public:
     /// @return buffer with printed address. Please, note that the buffer is static and just one for all calls.
     static const char *PrintAddress(Address1Wire addr);
 
+    /// @brief Set stack size for task where callback run.
+    /// @details This method sets stack size for task where callback run. Default is 2048. 
+    ///          The stack size is set for all callbacks. Please, be careful with increasing the size.
+    /// @param size
+    void SetCallbackMemorySize(uint size) { taskStackSize = size;}
 private:
     bool isInitialized = false;
+    uint taskStackSize = 2048;
     static char addrPrinted[SIZE_OF_ADDRESS_PRINTED + 1];
     ulong temperatureTimerInterval = TIMER_LOOP_PERIOD_THERMOMETERS;
     std::map<byte, OneWire *> oneWireCollection;
@@ -159,6 +168,20 @@ private:
     void notifyTemperatureChanges(const Thermometer *t);
     static void onTemperatureLoopTimer(TimerHandle_t xTimer);
     void requestTemperature();
+
+    
+    typedef struct {
+        ThermometerChanges t;
+        ThermometerCallback callback;
+    } ThermChangesParams;
+    static void runThermometerChanges(void *params);
+    
+    typedef struct
+    {
+        Thermometer *t;
+        TemperatureCallback callback;
+    } TemperatureChangesParams;
+    static void runTemperatureChanges(void *params);
 };
 
 extern Async1WireMgr OneWireMgr;
