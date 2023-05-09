@@ -24,14 +24,14 @@
     "platforms": "espressif32",
     "examples": [
         {
-            "name": "MultiDevices: One 1-wire + two DS1820",
+            "name": "MultiDevices",
             "base": "examples",
             "files": [
                 "MultiThermometers.cpp"
             ]
         },
         {
-            "name": "Convert Address to String and vise verca",
+            "name": "ConvertAddress",
             "base": "examples",
             "files": [
                 "ConvertAddress.cpp"
