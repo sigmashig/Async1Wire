@@ -1,6 +1,6 @@
 {
     "name": "Async1Wire",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "description": "The library, supports an asynchromous work with 1-wire. At this moment DS1820 supported only.",
     "keywords": "DS1820, DS18B20, OneWire, 1-wire, async, asynchronous",
     "repository": {
@@ -24,10 +24,17 @@
     "platforms": "espressif32",
     "examples": [
         {
-            "name": "MultiDevices",
-            "base": "examples/MultiDevices",
+            "name": "MultiDevices: One 1-wire + two DS1820",
+            "base": "examples",
             "files": [
                 "MultiThermometers.cpp"
+            ]
+        },
+        {
+            "name": "Convert Address to String and vise verca",
+            "base": "examples",
+            "files": [
+                "ConvertAddress.cpp"
             ]
         }
     ]

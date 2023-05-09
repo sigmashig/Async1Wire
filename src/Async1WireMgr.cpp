@@ -362,6 +362,30 @@ void Async1WireMgr::requestTemperature()
         }
     }
 }
+Address1Wire Async1WireMgr::ParseAddress(const char *addrStr)
+{
+    Address1Wire addr;
+    addr.packedAddress = 0;
+    if (strlen(addrStr) >= 16)
+    {
+        int j = 0;
+        for (int i = 0; i < 8; i++)
+        {
+            char hex[3];
+            hex[0] = addrStr[j];
+            hex[1] = addrStr[j + 1];
+            hex[2] = 0;
+            addr.addr[i] = (uint8_t)strtol(hex, NULL, 16);
+            j += 2;
+            if (!isHexadecimalDigit(addrStr[j]))
+            {
+                j++;
+            }
+        }
+    }
+    return addr;
+}
+
 //--------------------------------------------------------------------------
 Async1WireMgr OneWireMgr;
 ESP_EVENT_DEFINE_BASE(ONEWIRE_EVENT);

@@ -143,6 +143,15 @@ public:
     /// @return buffer with printed address. Please, note that the buffer is static and just one for all calls.
     static const char *PrintAddress(Address1Wire addr);
 
+    /// @brief Parse string to OneWire address.
+    /// @details This method parses string to OneWire address. String can be in any format, like
+    ///          28-3c-01-4b-06-00-00-7f
+    ///          283c014b0600007f
+    ///          and even 28:3c-014b+06/00-00:7f
+    /// @param addr
+    /// @return
+    static Address1Wire ParseAddress(const char *addrStr);
+
 private:
     bool isInitialized = false;
     static char addrPrinted[SIZE_OF_ADDRESS_PRINTED + 1];
